@@ -12,14 +12,72 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
         }
-        .game-container {
+        .container {
             text-align: center;
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            max-width: 800px;
+            width: 90%;
+        }
+        .lobby-screen {
+            display: block;
+        }
+        .game-screen {
+            display: none;
+        }
+        .logo {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .room-input {
+            margin: 20px 0;
+        }
+        .room-input input {
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 0 10px;
+            min-width: 200px;
+        }
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .status.waiting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
         .chessboard {
             display: grid;
@@ -38,6 +96,7 @@
             font-size: 36px;
             cursor: pointer;
             user-select: none;
+            position: relative;
         }
         .square.light {
             background-color: #f0d9b5;
@@ -45,46 +104,112 @@
         .square.dark {
             background-color: #b58863;
         }
+        .square.selected {
+            box-shadow: inset 0 0 0 3px #ff6b6b;
+        }
         .square:hover {
             opacity: 0.8;
+        }
+        .square.dragging {
+            opacity: 0.5;
         }
         .current-player {
             font-size: 18px;
             margin-bottom: 10px;
             font-weight: bold;
         }
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        .player-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            flex: 1;
+            margin: 0 10px;
+        }
+        .player-card.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
         .rules {
             max-width: 600px;
-            margin-top: 20px;
+            margin: 20px auto;
             text-align: left;
             background: #f9f9f9;
             padding: 15px;
-            border-radius: 5px;
+            border-radius: 8px;
         }
         .rules h3 {
             margin-top: 0;
         }
+        .room-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .back-btn {
+            background: #6c757d;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <h1>Chess Variant: Piece Swapping</h1>
-        <div class="current-player" id="currentPlayer">Current Player: White</div>
-        <div class="chessboard" id="chessboard"></div>
-        
-        <div class="rules">
-            <h3>Rules:</h3>
-            <ul>
-                <li>All pieces move according to standard chess rules</li>
-                <li><strong>Special Rule:</strong> You can swap positions with your own pieces instead of moving normally</li>
-                <li>You cannot swap with opponent pieces - only capture them</li>
-                <li>Win by capturing the opponent's king</li>
-                <li>Click a piece to select it, then click where you want to move/swap</li>
-            </ul>
+    <div class="container">
+        <!-- Lobby Screen -->
+        <div class="lobby-screen" id="lobbyScreen">
+            <div class="logo">♔ Chess Variant ♔</div>
+            <p>Experience chess with a twist - swap positions with your own pieces!</p>
+            
+            <div class="room-input">
+                <h3>Join or Create a Room</h3>
+                <input type="text" id="roomNameInput" placeholder="Enter room name" maxlength="20">
+                <button class="btn" onclick="joinRoom()">Join Room</button>
+            </div>
+            
+            <div id="statusMessage" class="status" style="display: none;"></div>
+            
+            <div class="rules">
+                <h3>How to Play:</h3>
+                <ul>
+                    <li>All pieces move according to standard chess rules</li>
+                    <li><strong>Special Rule:</strong> You can swap positions with your own pieces!</li>
+                    <li>Click or drag pieces to move them</li>
+                    <li>Win by capturing the opponent's king</li>
+                    <li>Two players needed per room</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div class="game-screen" id="gameScreen">
+            <div class="room-info">
+                <strong>Room:</strong> <span id="currentRoom"></span>
+            </div>
+            
+            <div class="player-info">
+                <div class="player-card" id="whitePlayer">
+                    <div>White Player</div>
+                    <div>♔ ♕ ♖ ♗ ♘ ♙</div>
+                </div>
+                <div class="player-card" id="blackPlayer">
+                    <div>Black Player</div>
+                    <div>♚ ♛ ♜ ♝ ♞ ♟</div>
+                </div>
+            </div>
+
+            <div class="current-player" id="currentPlayer">Current Player: White</div>
+            <div class="chessboard" id="chessboard"></div>
+            
+            <button class="btn back-btn" onclick="leaveRoom()">Leave Room</button>
         </div>
     </div>
 
     <script>
+        // Game state
         let selectedSquare = null;
         let gameBoard = [
             ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
@@ -98,12 +223,140 @@
         ];
         let currentPlayer = 'white';
         let gameOver = false;
+        let playerColor = null;
+        let roomName = '';
+        let draggedElement = null;
+        let draggedFrom = null;
 
         const pieceSymbols = {
             'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
             'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
         };
 
+        // Room management
+        function joinRoom() {
+            const input = document.getElementById('roomNameInput');
+            const room = input.value.trim();
+            
+            if (!room) {
+                alert('Please enter a room name');
+                return;
+            }
+            
+            roomName = room;
+            
+            // Simulate room joining - in a real app this would connect to a server
+            const existingRooms = JSON.parse(localStorage.getItem('chessRooms') || '{}');
+            
+            if (existingRooms[room]) {
+                // Room exists, join as second player
+                if (existingRooms[room].players >= 2) {
+                    showStatus('Room is full! Try another room.', 'waiting');
+                    return;
+                }
+                
+                existingRooms[room].players = 2;
+                playerColor = 'black';
+                showStatus('Joined room! You are Black. Game starting...', 'connected');
+            } else {
+                // Create new room
+                existingRooms[room] = { players: 1, created: Date.now() };
+                playerColor = 'white';
+                showStatus('Room created! Waiting for opponent...', 'waiting');
+            }
+            
+            localStorage.setItem('chessRooms', JSON.stringify(existingRooms));
+            
+            setTimeout(() => {
+                if (existingRooms[room].players === 2) {
+                    startGame();
+                } else {
+                    // Keep checking for second player
+                    checkForOpponent();
+                }
+            }, 1000);
+        }
+
+        function checkForOpponent() {
+            const interval = setInterval(() => {
+                const rooms = JSON.parse(localStorage.getItem('chessRooms') || '{}');
+                if (rooms[roomName] && rooms[roomName].players >= 2) {
+                    clearInterval(interval);
+                    showStatus('Opponent found! Starting game...', 'connected');
+                    setTimeout(startGame, 1000);
+                }
+            }, 2000);
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('statusMessage');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+
+        function startGame() {
+            document.getElementById('lobbyScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            document.getElementById('currentRoom').textContent = roomName;
+            
+            // Highlight current player
+            updatePlayerDisplay();
+            
+            createBoard();
+            renderBoard();
+        }
+
+        function leaveRoom() {
+            // Clean up room
+            const rooms = JSON.parse(localStorage.getItem('chessRooms') || '{}');
+            delete rooms[roomName];
+            localStorage.setItem('chessRooms', JSON.stringify(rooms));
+            
+            // Reset game state
+            resetGame();
+            
+            // Return to lobby
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('lobbyScreen').style.display = 'block';
+            document.getElementById('statusMessage').style.display = 'none';
+            document.getElementById('roomNameInput').value = '';
+        }
+
+        function resetGame() {
+            gameBoard = [
+                ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+                ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                [null, null, null, null, null, null, null, null],
+                [null, null, null, null, null, null, null, null],
+                [null, null, null, null, null, null, null, null],
+                [null, null, null, null, null, null, null, null],
+                ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+            ];
+            currentPlayer = 'white';
+            gameOver = false;
+            selectedSquare = null;
+            playerColor = null;
+            roomName = '';
+        }
+
+        function updatePlayerDisplay() {
+            const whiteCard = document.getElementById('whitePlayer');
+            const blackCard = document.getElementById('blackPlayer');
+            
+            whiteCard.classList.toggle('active', currentPlayer === 'white');
+            blackCard.classList.toggle('active', currentPlayer === 'black');
+            
+            const playerDisplay = document.getElementById('currentPlayer');
+            if (gameOver) {
+                playerDisplay.textContent = 'Game Over!';
+            } else {
+                playerDisplay.textContent = `Current Player: ${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}`;
+            }
+        }
+
+        // Board creation and rendering
         function createBoard() {
             const board = document.getElementById('chessboard');
             board.innerHTML = '';
@@ -114,7 +367,15 @@
                     square.className = `square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
                     square.dataset.row = row;
                     square.dataset.col = col;
+                    
+                    // Click events
                     square.addEventListener('click', () => handleSquareClick(row, col));
+                    
+                    // Drag and drop events
+                    square.addEventListener('dragstart', (e) => handleDragStart(e, row, col));
+                    square.addEventListener('dragover', (e) => e.preventDefault());
+                    square.addEventListener('drop', (e) => handleDrop(e, row, col));
+                    
                     board.appendChild(square);
                 }
             }
@@ -125,20 +386,35 @@
                 for (let col = 0; col < 8; col++) {
                     const square = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
                     const piece = gameBoard[row][col];
-                    square.textContent = piece ? pieceSymbols[piece] : '';
+                    
+                    if (piece) {
+                        square.textContent = pieceSymbols[piece];
+                        square.draggable = isPlayerPiece(piece, currentPlayer) && !gameOver;
+                    } else {
+                        square.textContent = '';
+                        square.draggable = false;
+                    }
+                    
+                    // Remove selection highlight
+                    square.classList.remove('selected');
                 }
             }
             
-            const playerDisplay = document.getElementById('currentPlayer');
-            if (gameOver) {
-                playerDisplay.textContent = 'Game Over!';
-            } else {
-                playerDisplay.textContent = `Current Player: ${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}`;
+            // Add selection highlight
+            if (selectedSquare) {
+                const selectedElement = document.querySelector(`[data-row="${selectedSquare.row}"][data-col="${selectedSquare.col}"]`);
+                selectedElement.classList.add('selected');
             }
+            
+            updatePlayerDisplay();
         }
 
+        // Click handling
         function handleSquareClick(row, col) {
-            if (gameOver) return; // Don't allow moves if game is over
+            if (gameOver) return;
+            
+            // Only allow moves for the player whose turn it is
+            if (playerColor && currentPlayer !== playerColor) return;
 
             if (selectedSquare) {
                 // Try to make a move
@@ -153,8 +429,49 @@
                     selectedSquare = { row, col };
                 }
             }
+            renderBoard();
         }
 
+        // Drag and drop handling
+        function handleDragStart(e, row, col) {
+            if (gameOver) return;
+            
+            // Only allow moves for the player whose turn it is
+            if (playerColor && currentPlayer !== playerColor) {
+                e.preventDefault();
+                return;
+            }
+
+            const piece = gameBoard[row][col];
+            if (piece && isPlayerPiece(piece, currentPlayer)) {
+                draggedElement = e.target;
+                draggedFrom = { row, col };
+                e.target.classList.add('dragging');
+                selectedSquare = { row, col };
+                renderBoard();
+            } else {
+                e.preventDefault();
+            }
+        }
+
+        function handleDrop(e, row, col) {
+            e.preventDefault();
+            
+            if (draggedFrom && canMoveTo(draggedFrom.row, draggedFrom.col, row, col)) {
+                makeMove(draggedFrom.row, draggedFrom.col, row, col);
+            }
+            
+            // Clean up drag state
+            if (draggedElement) {
+                draggedElement.classList.remove('dragging');
+            }
+            draggedElement = null;
+            draggedFrom = null;
+            selectedSquare = null;
+            renderBoard();
+        }
+
+        // Game logic (same as before)
         function isPlayerPiece(piece, player) {
             if (player === 'white') {
                 return piece === piece.toUpperCase();
@@ -167,20 +484,12 @@
             const piece = gameBoard[fromRow][fromCol];
             const targetPiece = gameBoard[toRow][toCol];
 
-            // Can't move to same square
             if (fromRow === toRow && fromCol === toCol) return false;
 
-            // Can swap with your own pieces
             if (targetPiece && isPlayerPiece(piece, currentPlayer) && isPlayerPiece(targetPiece, currentPlayer)) {
                 return true;
             }
 
-            // Can't move to a square with your own piece (except swapping case above)
-            if (targetPiece && isPlayerPiece(piece, currentPlayer) && isPlayerPiece(targetPiece, currentPlayer)) {
-                return false;
-            }
-
-            // Can't capture your own pieces if they're not swapping
             if (targetPiece && isPlayerPiece(piece, currentPlayer) === isPlayerPiece(targetPiece, currentPlayer)) {
                 return false;
             }
@@ -192,7 +501,6 @@
             const piece = gameBoard[fromRow][fromCol];
             const targetPiece = gameBoard[toRow][toCol];
 
-            // Check if capturing the king
             if (targetPiece && (targetPiece.toLowerCase() === 'k') && !isPlayerPiece(targetPiece, currentPlayer)) {
                 gameOver = true;
                 const winnerColor = currentPlayer;
@@ -201,13 +509,10 @@
                 }, 100);
             }
 
-            // Check if it's a swap with own piece
             if (targetPiece && isPlayerPiece(piece, currentPlayer) && isPlayerPiece(targetPiece, currentPlayer)) {
-                // Swap pieces
                 gameBoard[fromRow][fromCol] = targetPiece;
                 gameBoard[toRow][toCol] = piece;
             } else {
-                // Normal move or capture
                 gameBoard[toRow][toCol] = piece;
                 gameBoard[fromRow][fromCol] = null;
             }
@@ -215,7 +520,6 @@
             if (!gameOver) {
                 currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
             }
-            renderBoard();
         }
 
         function isValidMove(piece, fromRow, fromCol, toRow, toCol) {
@@ -225,43 +529,41 @@
             const absDeltaCol = Math.abs(deltaCol);
 
             switch (piece.toLowerCase()) {
-                case 'p': // Pawn
+                case 'p':
                     const direction = piece === 'P' ? -1 : 1;
                     const startRow = piece === 'P' ? 6 : 1;
                     
-                    // Forward move
                     if (deltaCol === 0) {
                         if (deltaRow === direction && !gameBoard[toRow][toCol]) return true;
                         if (fromRow === startRow && deltaRow === 2 * direction && !gameBoard[toRow][toCol]) return true;
                     }
-                    // Diagonal capture
                     else if (absDeltaCol === 1 && deltaRow === direction && gameBoard[toRow][toCol]) {
                         return true;
                     }
                     return false;
 
-                case 'r': // Rook
+                case 'r':
                     if (deltaRow === 0 || deltaCol === 0) {
                         return isPathClear(fromRow, fromCol, toRow, toCol);
                     }
                     return false;
 
-                case 'b': // Bishop
+                case 'b':
                     if (absDeltaRow === absDeltaCol) {
                         return isPathClear(fromRow, fromCol, toRow, toCol);
                     }
                     return false;
 
-                case 'q': // Queen
+                case 'q':
                     if (deltaRow === 0 || deltaCol === 0 || absDeltaRow === absDeltaCol) {
                         return isPathClear(fromRow, fromCol, toRow, toCol);
                     }
                     return false;
 
-                case 'k': // King
+                case 'k':
                     return absDeltaRow <= 1 && absDeltaCol <= 1;
 
-                case 'n': // Knight
+                case 'n':
                     return (absDeltaRow === 2 && absDeltaCol === 1) || (absDeltaRow === 1 && absDeltaCol === 2);
 
                 default:
@@ -285,9 +587,12 @@
             return true;
         }
 
-        // Initialize the game
-        createBoard();
-        renderBoard();
+        // Allow Enter key to join room
+        document.getElementById('roomNameInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                joinRoom();
+            }
+        });
     </script>
 </body>
 </html>
