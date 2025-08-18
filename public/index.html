@@ -1,4 +1,13 @@
-<!DOCTYPE html>
+function checkForOpponent() {
+            const interval = setInterval(() => {
+                const rooms = JSON.parse(localStorage.getItem('chessRooms') || '{}');
+                if (rooms[roomName] && rooms[roomName].players >= 2) {
+                    clearInterval(interval);
+                    showStatus('Opponent found! Starting game...', 'connected');
+                    setTimeout(startGame, 1000);
+                }
+            }, 2000);
+        }<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -245,7 +254,7 @@
             
             roomName = room;
             
-            // Simulate room joining - in a real app this would connect to a server
+            // Simple room system using localStorage
             const existingRooms = JSON.parse(localStorage.getItem('chessRooms') || '{}');
             
             if (existingRooms[room]) {
@@ -262,7 +271,7 @@
                 // Create new room
                 existingRooms[room] = { players: 1, created: Date.now() };
                 playerColor = 'white';
-                showStatus('Room created! Waiting for opponent...', 'waiting');
+                showStatus('Room created! Share room name: "' + room + '" with your friend. Waiting for opponent...', 'waiting');
             }
             
             localStorage.setItem('chessRooms', JSON.stringify(existingRooms));
@@ -277,16 +286,7 @@
             }, 1000);
         }
 
-        function checkForOpponent() {
-            const interval = setInterval(() => {
-                const rooms = JSON.parse(localStorage.getItem('chessRooms') || '{}');
-                if (rooms[roomName] && rooms[roomName].players >= 2) {
-                    clearInterval(interval);
-                    showStatus('Opponent found! Starting game...', 'connected');
-                    setTimeout(startGame, 1000);
-                }
-            }, 2000);
-        }
+
 
         function showStatus(message, type) {
             const status = document.getElementById('statusMessage');
