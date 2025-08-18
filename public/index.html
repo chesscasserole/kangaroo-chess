@@ -317,23 +317,32 @@
             try {
                 const roomRef = firebase.ref(firebase.database, `rooms/${room}`);
                 
-                // Check current room state
-                firebase.onValue(roomRef, (snapshot) => {
-                    const roomData = snapshot.val();
-                    
-                    if (!roomData) {
-                        // Create new room
-                        createRoom(room);
-                    } else if (roomData.players && Object.keys(roomData.players).length >= 2) {
-                        if (!roomData.players[playerId]) {
-                            showStatus('Room is full! Try another room.', 'waiting');
-                            return;
-                        }
-                    } else {
-                        // Join existing room
-                        joinExistingRoom(room, roomData);
+                // Get room data once
+                const snapshot = await new Promise((resolve) => {
+                    firebase.onValue(roomRef, resolve, { onlyOnce: true });
+                });
+                
+                const roomData = snapshot.val();
+                
+                if (!roomData) {
+                    // Create new room
+                    createRoom(room);
+                } else if (roomData.players && Object.keys(roomData.players).length >= 2) {
+                    if (!roomData.players[playerId]) {
+                        showStatus('Room is full! Try another room.', 'waiting');
+                        return;
                     }
-                }, { onlyOnce: true });
+                    // Player is rejoining
+                    playerColor = roomData.players[playerId].color;
+                    showStatus(`Rejoining room "${room}" as ${playerColor}...`, 'connected');
+                    setTimeout(() => {
+                        startGame();
+                        listenForGameUpdates(room);
+                    }, 1000);
+                } else {
+                    // Join existing room as second player
+                    joinExistingRoom(room, roomData);
+                }
                 
             } catch (error) {
                 console.error('Error joining room:', error);
@@ -365,7 +374,7 @@
             const playerRef = firebase.ref(firebase.database, `rooms/${room}/players/${playerId}`);
             firebase.onDisconnect(playerRef).remove();
             
-            // Listen for second player
+            // Listen for game updates and start when ready
             listenForGameUpdates(room);
         }
 
@@ -403,13 +412,16 @@
                 if (!roomData) return;
                 
                 // Check if we have two players and should start the game
-                if (roomData.players && Object.keys(roomData.players).length === 2 && 
-                    document.getElementById('gameScreen').style.display === 'none') {
-                    startGame();
+                if (roomData.players && Object.keys(roomData.players).length === 2) {
+                    // If we haven't started the game yet, start it
+                    if (document.getElementById('gameScreen').style.display === 'none') {
+                        showStatus('Opponent joined! Starting game...', 'connected');
+                        setTimeout(() => startGame(), 500);
+                    }
                 }
                 
-                // Update game state if it exists and is different from current state
-                if (roomData.gameState) {
+                // Update game state if it exists
+                if (roomData.gameState && document.getElementById('gameScreen').style.display !== 'none') {
                     const newBoard = roomData.gameState.board;
                     const newCurrentPlayer = roomData.gameState.currentPlayer;
                     const newGameOver = roomData.gameState.gameOver;
@@ -506,20 +518,31 @@
             const board = document.getElementById('chessboard');
             board.innerHTML = '';
             
-            for (let row = 0; row < 8; row++) {
-                for (let col = 0; col < 8; col++) {
+            // Create board from player's perspective
+            for (let displayRow = 0; displayRow < 8; displayRow++) {
+                for (let displayCol = 0; displayCol < 8; displayCol++) {
+                    // Calculate actual board position based on player color
+                    let actualRow = displayRow;
+                    let actualCol = displayCol;
+                    
+                    if (playerColor === 'black') {
+                        // Flip board for black player
+                        actualRow = 7 - displayRow;
+                        actualCol = 7 - displayCol;
+                    }
+                    
                     const square = document.createElement('div');
-                    square.className = `square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
-                    square.dataset.row = row;
-                    square.dataset.col = col;
+                    square.className = `square ${(displayRow + displayCol) % 2 === 0 ? 'light' : 'dark'}`;
+                    square.dataset.row = actualRow;
+                    square.dataset.col = actualCol;
                     
                     // Click events
-                    square.addEventListener('click', () => handleSquareClick(row, col));
+                    square.addEventListener('click', () => handleSquareClick(actualRow, actualCol));
                     
                     // Drag and drop events
-                    square.addEventListener('dragstart', (e) => handleDragStart(e, row, col));
+                    square.addEventListener('dragstart', (e) => handleDragStart(e, actualRow, actualCol));
                     square.addEventListener('dragover', (e) => e.preventDefault());
-                    square.addEventListener('drop', (e) => handleDrop(e, row, col));
+                    square.addEventListener('drop', (e) => handleDrop(e, actualRow, actualCol));
                     
                     board.appendChild(square);
                 }
