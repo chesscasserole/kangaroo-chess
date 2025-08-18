@@ -325,23 +325,28 @@
                 const roomData = snapshot.val();
                 
                 if (!roomData) {
-                    // Create new room
+                    // Create new room - first player is always white
                     createRoom(room);
-                } else if (roomData.players && Object.keys(roomData.players).length >= 2) {
-                    if (!roomData.players[playerId]) {
+                } else {
+                    // Room exists - check how many players
+                    const existingPlayers = roomData.players ? Object.keys(roomData.players) : [];
+                    
+                    if (existingPlayers.includes(playerId)) {
+                        // Player is rejoining
+                        playerColor = roomData.players[playerId].color;
+                        showStatus(`Rejoining room "${room}" as ${playerColor}...`, 'connected');
+                        setTimeout(() => {
+                            startGame();
+                            listenForGameUpdates(room);
+                        }, 1000);
+                    } else if (existingPlayers.length >= 2) {
+                        // Room is full
                         showStatus('Room is full! Try another room.', 'waiting');
                         return;
+                    } else {
+                        // Join as second player (black)
+                        joinExistingRoom(room, roomData);
                     }
-                    // Player is rejoining
-                    playerColor = roomData.players[playerId].color;
-                    showStatus(`Rejoining room "${room}" as ${playerColor}...`, 'connected');
-                    setTimeout(() => {
-                        startGame();
-                        listenForGameUpdates(room);
-                    }, 1000);
-                } else {
-                    // Join existing room as second player
-                    joinExistingRoom(room, roomData);
                 }
                 
             } catch (error) {
@@ -379,28 +384,32 @@
         }
 
         function joinExistingRoom(room, roomData) {
+            // Check if player is already in this room
             if (roomData.players && roomData.players[playerId]) {
                 // Rejoin existing game
                 playerColor = roomData.players[playerId].color;
+                showStatus(`Rejoining room "${room}" as ${playerColor}...`, 'connected');
             } else {
-                // Join as second player
+                // Join as second player (always black)
                 playerColor = 'black';
-                firebase.set(firebase.ref(firebase.database, `rooms/${room}/players/${playerId}`), {
+                
+                // Add this player to the room
+                const playerUpdate = {};
+                playerUpdate[`rooms/${room}/players/${playerId}`] = {
                     color: 'black',
                     joined: Date.now()
-                });
+                };
+                firebase.set(firebase.ref(firebase.database), playerUpdate);
+                
+                showStatus(`Joined room "${room}"! You are Black. Starting game...`, 'connected');
             }
-            
-            showStatus(`Joined room "${room}"! You are ${playerColor}. Starting game...`, 'connected');
             
             // Set up disconnect cleanup
             const playerRef = firebase.ref(firebase.database, `rooms/${room}/players/${playerId}`);
             firebase.onDisconnect(playerRef).remove();
             
-            setTimeout(() => {
-                startGame();
-                listenForGameUpdates(room);
-            }, 1000);
+            // Start listening for game updates
+            listenForGameUpdates(room);
         }
 
         function listenForGameUpdates(room) {
@@ -410,6 +419,20 @@
                 const roomData = snapshot.val();
                 
                 if (!roomData) return;
+                
+                // Make sure we have the right player color assigned
+                if (roomData.players && roomData.players[playerId]) {
+                    const assignedColor = roomData.players[playerId].color;
+                    if (playerColor !== assignedColor) {
+                        playerColor = assignedColor;
+                        console.log(`Player color updated to: ${playerColor}`);
+                        // Recreate board with correct orientation if game is active
+                        if (document.getElementById('gameScreen').style.display !== 'none') {
+                            createBoard();
+                            renderBoard();
+                        }
+                    }
+                }
                 
                 // Check if we have two players and should start the game
                 if (roomData.players && Object.keys(roomData.players).length === 2) {
