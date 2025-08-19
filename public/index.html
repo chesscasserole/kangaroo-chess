@@ -440,14 +440,19 @@
                 
                 if (!roomData) return;
                 
+                console.log('Room data update:', roomData);
+                
                 // Make sure we have the right player color assigned
                 if (roomData.players && roomData.players[playerId]) {
                     const assignedColor = roomData.players[playerId].color;
                     if (playerColor !== assignedColor) {
                         playerColor = assignedColor;
                         console.log(`Player color updated to: ${playerColor}`);
-                        // Update player role display
-                        document.getElementById('playerRole').textContent = playerColor.charAt(0).toUpperCase() + playerColor.slice(1);
+                        // Update player role display if game screen is visible
+                        const playerRoleElement = document.getElementById('playerRole');
+                        if (playerRoleElement) {
+                            playerRoleElement.textContent = playerColor.charAt(0).toUpperCase() + playerColor.slice(1);
+                        }
                         // Recreate board with correct orientation if game is active
                         if (document.getElementById('gameScreen').style.display !== 'none') {
                             createBoard();
@@ -457,12 +462,25 @@
                 }
                 
                 // Check if we have two players and should start the game
-                if (roomData.players && Object.keys(roomData.players).length === 2) {
+                const playerCount = roomData.players ? Object.keys(roomData.players).length : 0;
+                console.log(`Room has ${playerCount} players`);
+                
+                if (playerCount === 2) {
                     // If we haven't started the game yet, start it
-                    if (document.getElementById('gameScreen').style.display === 'none') {
+                    const gameScreen = document.getElementById('gameScreen');
+                    const lobbyScreen = document.getElementById('lobbyScreen');
+                    
+                    if (gameScreen.style.display === 'none' || gameScreen.style.display === '') {
+                        console.log('Starting game for both players');
                         showStatus('Opponent joined! Starting game...', 'connected');
-                        setTimeout(() => startGame(), 500);
+                        setTimeout(() => {
+                            console.log('Actually starting game now');
+                            startGame();
+                        }, 500);
                     }
+                } else if (playerCount === 1) {
+                    // Still waiting for second player
+                    showStatus(`Room "${room}" created! Share this room name with your friend. Waiting for opponent...`, 'waiting');
                 }
                 
                 // Update game state if it exists
@@ -496,14 +514,32 @@
         }
 
         function startGame() {
+            console.log('startGame called, playerColor:', playerColor);
+            
             document.getElementById('lobbyScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'block';
             document.getElementById('currentRoom').textContent = roomName;
-            document.getElementById('playerRole').textContent = playerColor.charAt(0).toUpperCase() + playerColor.slice(1);
+            document.getElementById('playerRole').textContent = playerColor ? playerColor.charAt(0).toUpperCase() + playerColor.slice(1) : 'Unknown';
+            
+            // Reset game board to initial state
+            gameBoard = [
+                ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+                ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                [null, null, null, null, null, null, null, null],
+                [null, null, null, null, null, null, null, null],
+                [null, null, null, null, null, null, null, null],
+                [null, null, null, null, null, null, null, null],
+                ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+            ];
+            currentPlayer = 'white';
+            gameOver = false;
             
             updatePlayerDisplay();
             createBoard();
             renderBoard();
+            
+            console.log('Game started successfully');
         }
 
         window.leaveRoom = function() {
