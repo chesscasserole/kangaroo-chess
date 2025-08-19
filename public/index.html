@@ -384,18 +384,38 @@
         }
 
         async function joinExistingRoom(room) {
-            // Join as second player (always black)
-            playerColor = 'black';
-            
             try {
+                // Get current room state to determine available color
+                const roomRef = firebase.ref(firebase.database, `rooms/${room}`);
+                const snapshot = await firebase.get(roomRef);
+                const roomData = snapshot.val();
+                
+                if (!roomData || !roomData.players) {
+                    throw new Error('Room data not found');
+                }
+                
+                // Check what colors are taken
+                const existingPlayers = Object.values(roomData.players);
+                const takenColors = existingPlayers.map(player => player.color);
+                
+                // Assign the opposite color of what's already taken
+                if (takenColors.includes('white') && !takenColors.includes('black')) {
+                    playerColor = 'black';
+                } else if (takenColors.includes('black') && !takenColors.includes('white')) {
+                    playerColor = 'white';
+                } else {
+                    // Default to black if white is taken, or if somehow both are taken
+                    playerColor = 'black';
+                }
+                
                 // Add this player to the room
                 const playerRef = firebase.ref(firebase.database, `rooms/${room}/players/${playerId}`);
                 await firebase.set(playerRef, {
-                    color: 'black',
+                    color: playerColor,
                     joined: Date.now()
                 });
                 
-                showStatus(`Joined room "${room}"! You are Black. Starting game...`, 'connected');
+                showStatus(`Joined room "${room}"! You are ${playerColor.charAt(0).toUpperCase() + playerColor.slice(1)}. Starting game...`, 'connected');
                 
                 // Set up disconnect cleanup
                 firebase.onDisconnect(playerRef).remove();
