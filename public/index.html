@@ -671,6 +671,25 @@
         function handleSquareClick(row, col) {
             if (gameOver) return;
             
+            const piece = gameBoard[row][col];
+            
+            // Debug: Let's add a simple alert to see what's happening
+            if (selectedSquare === null && piece) {
+                // Show a quick status check
+                const canSelect = isPlayerPiece(piece, currentPlayer);
+                const isYourTurn = currentPlayer === playerColor;
+                
+                if (!isYourTurn) {
+                    alert(`It's ${currentPlayer}'s turn, but you are ${playerColor}`);
+                    return;
+                }
+                
+                if (!canSelect) {
+                    alert(`Cannot select ${piece} - not your piece. Current player: ${currentPlayer}`);
+                    return;
+                }
+            }
+            
             // Only allow moves for the player whose turn it is
             if (playerColor && currentPlayer !== playerColor) return;
 
@@ -679,14 +698,17 @@
                 const moveAttempted = canMoveTo(selectedSquare.row, selectedSquare.col, row, col);
                 if (moveAttempted) {
                     makeMove(selectedSquare.row, selectedSquare.col, row, col);
+                } else {
+                    // Show why move failed
+                    alert(`Cannot move from ${selectedSquare.row},${selectedSquare.col} to ${row},${col}`);
                 }
                 // Always clear selection after attempting a move
                 selectedSquare = null;
             } else {
                 // Select a piece
-                const piece = gameBoard[row][col];
                 if (piece && isPlayerPiece(piece, currentPlayer)) {
                     selectedSquare = { row, col };
+                    alert(`Selected ${piece} at ${row},${col}`);
                 }
             }
             renderBoard();
@@ -733,10 +755,12 @@
 
         // Game logic
         function isPlayerPiece(piece, player) {
+            if (!piece || !player) return false;
+            
             if (player === 'white') {
-                return piece === piece.toUpperCase();
+                return piece === piece.toUpperCase(); // White pieces are uppercase
             } else {
-                return piece === piece.toLowerCase();
+                return piece === piece.toLowerCase(); // Black pieces are lowercase
             }
         }
 
