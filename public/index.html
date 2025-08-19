@@ -673,22 +673,35 @@
 
         // Click handling
         function handleSquareClick(row, col) {
+            console.log(`Square clicked: ${row},${col}, current player: ${currentPlayer}, player color: ${playerColor}`);
+            
             if (gameOver) return;
             
             // Only allow moves for the player whose turn it is
-            if (playerColor && currentPlayer !== playerColor) return;
+            if (playerColor && currentPlayer !== playerColor) {
+                console.log('Not your turn');
+                return;
+            }
 
             if (selectedSquare) {
+                console.log(`Selected square exists: ${selectedSquare.row},${selectedSquare.col}`);
                 // Try to make a move
                 if (canMoveTo(selectedSquare.row, selectedSquare.col, row, col)) {
+                    console.log('Valid move, making move');
                     makeMove(selectedSquare.row, selectedSquare.col, row, col);
+                } else {
+                    console.log('Invalid move');
                 }
                 selectedSquare = null;
             } else {
                 // Select a piece
                 const piece = gameBoard[row][col];
+                console.log(`Trying to select piece: ${piece}`);
                 if (piece && isPlayerPiece(piece, currentPlayer)) {
+                    console.log('Piece selected');
                     selectedSquare = { row, col };
+                } else {
+                    console.log('Cannot select this piece');
                 }
             }
             renderBoard();
@@ -748,14 +761,22 @@
 
             if (fromRow === toRow && fromCol === toCol) return false;
 
+            // Allow swapping with own pieces (special rule)
             if (targetPiece && isPlayerPiece(piece, currentPlayer) && isPlayerPiece(targetPiece, currentPlayer)) {
                 return true;
             }
 
-            if (targetPiece && isPlayerPiece(piece, currentPlayer) === isPlayerPiece(targetPiece, currentPlayer)) {
+            // Don't allow capturing own pieces (unless swapping)
+            if (targetPiece && isPlayerPiece(piece, currentPlayer) && isPlayerPiece(targetPiece, currentPlayer)) {
+                return true; // This is redundant now but keeping for clarity
+            }
+
+            // Don't allow moving to square occupied by own piece (regular move)
+            if (targetPiece && isPlayerPiece(targetPiece, currentPlayer)) {
                 return false;
             }
 
+            // Check if it's a valid move according to piece rules
             return isValidMove(piece, fromRow, fromCol, toRow, toCol);
         }
 
@@ -800,45 +821,71 @@
             const absDeltaRow = Math.abs(deltaRow);
             const absDeltaCol = Math.abs(deltaCol);
 
+            console.log(`Checking move for ${piece} from ${fromRow},${fromCol} to ${toRow},${toCol}`);
+
             switch (piece.toLowerCase()) {
                 case 'p':
                     const direction = piece === 'P' ? -1 : 1;
                     const startRow = piece === 'P' ? 6 : 1;
                     
+                    // Forward movement
                     if (deltaCol === 0) {
-                        if (deltaRow === direction && !gameBoard[toRow][toCol]) return true;
-                        if (fromRow === startRow && deltaRow === 2 * direction && !gameBoard[toRow][toCol]) return true;
+                        if (deltaRow === direction && !gameBoard[toRow][toCol]) {
+                            console.log('Pawn: valid one square forward');
+                            return true;
+                        }
+                        if (fromRow === startRow && deltaRow === 2 * direction && !gameBoard[toRow][toCol]) {
+                            console.log('Pawn: valid two squares forward from start');
+                            return true;
+                        }
                     }
+                    // Diagonal capture
                     else if (absDeltaCol === 1 && deltaRow === direction && gameBoard[toRow][toCol]) {
+                        console.log('Pawn: valid diagonal capture');
                         return true;
                     }
+                    console.log('Pawn: invalid move');
                     return false;
 
                 case 'r':
                     if (deltaRow === 0 || deltaCol === 0) {
-                        return isPathClear(fromRow, fromCol, toRow, toCol);
+                        const result = isPathClear(fromRow, fromCol, toRow, toCol);
+                        console.log(`Rook: ${result ? 'valid' : 'invalid'} move`);
+                        return result;
                     }
+                    console.log('Rook: invalid move');
                     return false;
 
                 case 'b':
                     if (absDeltaRow === absDeltaCol) {
-                        return isPathClear(fromRow, fromCol, toRow, toCol);
+                        const result = isPathClear(fromRow, fromCol, toRow, toCol);
+                        console.log(`Bishop: ${result ? 'valid' : 'invalid'} move`);
+                        return result;
                     }
+                    console.log('Bishop: invalid move');
                     return false;
 
                 case 'q':
                     if (deltaRow === 0 || deltaCol === 0 || absDeltaRow === absDeltaCol) {
-                        return isPathClear(fromRow, fromCol, toRow, toCol);
+                        const result = isPathClear(fromRow, fromCol, toRow, toCol);
+                        console.log(`Queen: ${result ? 'valid' : 'invalid'} move`);
+                        return result;
                     }
+                    console.log('Queen: invalid move');
                     return false;
 
                 case 'k':
-                    return absDeltaRow <= 1 && absDeltaCol <= 1;
+                    const result = absDeltaRow <= 1 && absDeltaCol <= 1;
+                    console.log(`King: ${result ? 'valid' : 'invalid'} move`);
+                    return result;
 
                 case 'n':
-                    return (absDeltaRow === 2 && absDeltaCol === 1) || (absDeltaRow === 1 && absDeltaCol === 2);
+                    const knightResult = (absDeltaRow === 2 && absDeltaCol === 1) || (absDeltaRow === 1 && absDeltaCol === 2);
+                    console.log(`Knight: ${knightResult ? 'valid' : 'invalid'} move`);
+                    return knightResult;
 
                 default:
+                    console.log('Unknown piece');
                     return false;
             }
         }
