@@ -673,34 +673,20 @@
             
             const piece = gameBoard[row][col];
             
-            // Debug: Let's add a simple alert to see what's happening
-            if (selectedSquare === null && piece) {
-                // Show a quick status check
-                const canSelect = isPlayerPiece(piece, currentPlayer);
-                const isYourTurn = currentPlayer === playerColor;
-                
-                if (!isYourTurn) {
-                    alert(`It's ${currentPlayer}'s turn, but you are ${playerColor}`);
-                    return;
-                }
-                
-                if (!canSelect) {
-                    alert(`Cannot select ${piece} - not your piece. Current player: ${currentPlayer}`);
-                    return;
-                }
-            }
-            
             // Only allow moves for the player whose turn it is
-            if (playerColor && currentPlayer !== playerColor) return;
+            if (playerColor && currentPlayer !== playerColor) {
+                alert(`It's ${currentPlayer}'s turn, but you are ${playerColor}`);
+                return;
+            }
 
             if (selectedSquare) {
                 // Try to make a move
-                const moveAttempted = canMoveTo(selectedSquare.row, selectedSquare.col, row, col);
-                if (moveAttempted) {
+                const moveIsValid = canMoveTo(selectedSquare.row, selectedSquare.col, row, col);
+                if (moveIsValid) {
+                    alert(`Making valid move from ${selectedSquare.row},${selectedSquare.col} to ${row},${col}`);
                     makeMove(selectedSquare.row, selectedSquare.col, row, col);
                 } else {
-                    // Show why move failed
-                    alert(`Cannot move from ${selectedSquare.row},${selectedSquare.col} to ${row},${col}`);
+                    alert(`Invalid move from ${selectedSquare.row},${selectedSquare.col} to ${row},${col}`);
                 }
                 // Always clear selection after attempting a move
                 selectedSquare = null;
@@ -708,7 +694,9 @@
                 // Select a piece
                 if (piece && isPlayerPiece(piece, currentPlayer)) {
                     selectedSquare = { row, col };
-                    alert(`Selected ${piece} at ${row},${col}`);
+                    alert(`Selected ${piece} at ${row},${col} for player ${currentPlayer}`);
+                } else if (piece) {
+                    alert(`Cannot select ${piece} - belongs to ${isPlayerPiece(piece, 'white') ? 'white' : 'black'}, current player is ${currentPlayer}`);
                 }
             }
             renderBoard();
@@ -788,6 +776,7 @@
             const piece = gameBoard[fromRow][fromCol];
             const targetPiece = gameBoard[toRow][toCol];
 
+            // Check if capturing enemy king (win condition)
             if (targetPiece && (targetPiece.toLowerCase() === 'k') && !isPlayerPiece(targetPiece, currentPlayer)) {
                 gameOver = true;
                 const winnerColor = currentPlayer;
@@ -796,20 +785,24 @@
                 }, 100);
             }
 
+            // Handle piece swapping (special rule) or regular move
             if (targetPiece && isPlayerPiece(piece, currentPlayer) && isPlayerPiece(targetPiece, currentPlayer)) {
+                // Swap positions of two own pieces
                 gameBoard[fromRow][fromCol] = targetPiece;
                 gameBoard[toRow][toCol] = piece;
             } else {
+                // Regular move or capture
                 gameBoard[toRow][toCol] = piece;
                 gameBoard[fromRow][fromCol] = null;
             }
 
+            // Only switch turns if the game isn't over
             if (!gameOver) {
                 currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
             }
 
-            // Update Firebase with new game state
-            if (roomName) {
+            // Update Firebase with new game state - but only if we're in an active game
+            if (roomName && document.getElementById('gameScreen').style.display !== 'none') {
                 const gameStateRef = firebase.ref(firebase.database, `rooms/${roomName}/gameState`);
                 firebase.set(gameStateRef, {
                     board: gameBoard,
