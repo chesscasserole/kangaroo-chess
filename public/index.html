@@ -3,526 +3,354 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chess Variant - Piece Swapping</title>
+    <title>Kangaroo Chess</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+        * {
             margin: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .container {
-            text-align: center;
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            max-width: 800px;
-            width: 90%;
-        }
-        .lobby-screen {
-            display: block;
-        }
-        .game-screen {
-            display: none;
-        }
-        .logo {
-            font-size: 2.5em;
-            font-weight: bold;
-            margin-bottom: 20px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .room-input {
-            margin: 20px 0;
-        }
-        .room-input input {
-            padding: 12px;
-            font-size: 16px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            margin: 0 10px;
-            min-width: 200px;
-        }
-        .btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 5px;
-            transition: transform 0.2s;
         }
-        .btn:hover {
-            transform: translateY(-2px);
+
+        .header {
+            padding: 20px;
+            text-align: center;
         }
-        .status {
-            margin: 20px 0;
-            padding: 15px;
-            border-radius: 8px;
-            font-weight: bold;
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
-        .status.waiting {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
+
+        .game-container {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
         }
-        .status.connected {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+
+        .board-container {
+            position: relative;
         }
+
         .chessboard {
             display: grid;
             grid-template-columns: repeat(8, 60px);
             grid-template-rows: repeat(8, 60px);
-            gap: 0;
-            margin: 20px auto;
-            border: 2px solid #333;
+            border: 3px solid #8B4513;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
+
         .square {
             width: 60px;
             height: 60px;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             font-size: 36px;
             cursor: pointer;
-            user-select: none;
             position: relative;
+            transition: all 0.2s ease;
         }
+
         .square.light {
             background-color: #f0d9b5;
         }
+
         .square.dark {
             background-color: #b58863;
         }
+
         .square.selected {
-            box-shadow: inset 0 0 0 3px #ff6b6b;
+            background-color: #ffff00 !important;
+            box-shadow: inset 0 0 0 3px #ff6b35;
         }
+
+        .square.valid-move {
+            background-color: #90EE90 !important;
+        }
+
+        .square.swap-selected {
+            background-color: #ff69b4 !important;
+            box-shadow: inset 0 0 0 3px #ff1493;
+        }
+
         .square:hover {
-            opacity: 0.8;
+            filter: brightness(1.2);
         }
-        .square.dragging {
-            opacity: 0.5;
+
+        .game-info {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            min-width: 300px;
+            max-width: 400px;
         }
-        .current-player {
-            font-size: 18px;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        .player-info {
-            display: flex;
-            justify-content: space-between;
-            margin: 20px 0;
-        }
-        .player-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            flex: 1;
-            margin: 0 10px;
-        }
-        .player-card.active {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-        }
-        .rules {
-            max-width: 600px;
-            margin: 20px auto;
-            text-align: left;
-            background: #f9f9f9;
-            padding: 15px;
+
+        .status {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 8px;
         }
-        .rules h3 {
-            margin-top: 0;
-        }
-        .room-info {
-            background: #e3f2fd;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-        .back-btn {
-            background: #6c757d;
+
+        .controls {
             margin-top: 20px;
         }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .room-setup {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .room-setup input {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            margin: 10px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .move-history {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .move {
+            padding: 3px 0;
+            font-family: monospace;
+        }
+
+        .rules {
+            font-size: 0.9em;
+            line-height: 1.4;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
         .connection-status {
             position: fixed;
-            top: 10px;
-            right: 10px;
-            padding: 8px 12px;
-            border-radius: 5px;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .connection-status.connected {
+            background: #4CAF50;
+        }
+
+        .connection-status.disconnected {
+            background: #f44336;
+        }
+
+        .coordinates {
+            position: absolute;
             font-size: 12px;
             font-weight: bold;
+            color: #666;
         }
-        .connection-status.online {
-            background: #28a745;
-            color: white;
+
+        .coord-rank {
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
         }
-        .connection-status.offline {
-            background: #dc3545;
-            color: white;
+
+        .coord-file {
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .chessboard {
+                grid-template-columns: repeat(8, 45px);
+                grid-template-rows: repeat(8, 45px);
+            }
+            
+            .square {
+                width: 45px;
+                height: 45px;
+                font-size: 28px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="connection-status" id="connectionStatus">Connecting...</div>
+    <div class="connection-status disconnected" id="connectionStatus">Connecting...</div>
     
-    <div class="container">
-        <!-- Lobby Screen -->
-        <div class="lobby-screen" id="lobbyScreen">
-            <div class="logo">♔ Kangaroo Chess ♔</div>
-            <p>Experience chess with a twist - swap positions with your own pieces!</p>
-            
-            <div class="room-input">
-                <h3>Join or Create a Room</h3>
-                <input type="text" id="roomNameInput" placeholder="Enter room name" maxlength="20">
-                <button class="btn" onclick="joinRoom()">Join Room</button>
-            </div>
-            
-            <div id="statusMessage" class="status" style="display: none;"></div>
-            
-            <div class="rules">
-                <h3>How to Play:</h3>
-                <ul>
-                    <li>All pieces move according to standard chess rules</li>
-                    <li><strong>Special Rule:</strong> You can swap positions with your own pieces!</li>
-                    <li>Click or drag pieces to move them</li>
-                    <li>Win by capturing the opponent's king</li>
-                    <li>Share the room name with friends to play online!</li>
-                </ul>
-            </div>
+    <div class="header">
+        <h1>🦘 Kangaroo Chess</h1>
+        <p>Chess with a hop! Swap any two of your own pieces instead of moving.</p>
+    </div>
+
+    <div id="roomSetup" class="room-setup">
+        <h2>Join or Create a Game</h2>
+        <div>
+            <input type="text" id="roomInput" placeholder="Enter room code" maxlength="6">
+            <button class="btn" onclick="joinRoom()">Join Room</button>
         </div>
-
-        <!-- Game Screen -->
-        <div class="game-screen" id="gameScreen">
-            <div class="room-info">
-                <strong>Room:</strong> <span id="currentRoom"></span> | 
-                <strong>You are:</strong> <span id="playerRole"></span>
-            </div>
-            
-            <div class="player-info">
-                <div class="player-card" id="whitePlayer">
-                    <div>White Player</div>
-                    <div>♔ ♕ ♖ ♗ ♘ ♙</div>
-                </div>
-                <div class="player-card" id="blackPlayer">
-                    <div>Black Player</div>
-                    <div>♚ ♛ ♜ ♝ ♞ ♟</div>
-                </div>
-            </div>
-
-            <div class="current-player" id="currentPlayer">Current Player: White</div>
-            <div class="chessboard" id="chessboard"></div>
-            
-            <button class="btn back-btn" onclick="leaveRoom()">Leave Room</button>
+        <div>
+            <button class="btn" onclick="createRoom()">Create New Room</button>
+        </div>
+        <div>
+            <input type="text" id="playerName" placeholder="Your name (optional)" maxlength="20">
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, set, onValue, push, remove, onDisconnect, get, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    <div id="gameArea" class="game-container" style="display: none;">
+        <div class="board-container">
+            <div class="chessboard" id="chessboard"></div>
+        </div>
+        
+        <div class="game-info">
+            <div class="status" id="gameStatus">Waiting for players...</div>
+            
+            <div class="controls">
+                <button class="btn" id="swapBtn" onclick="toggleSwapMode()" disabled>Swap Mode</button>
+                <button class="btn" onclick="newGame()">New Game</button>
+                <button class="btn" onclick="leaveRoom()">Leave Room</button>
+            </div>
+            
+            <div class="move-history" id="moveHistory"></div>
+            
+            <div class="rules">
+                <strong>Kangaroo Chess Rules:</strong><br>
+                • Standard chess rules apply<br>
+                • On your turn, you may swap any two of your own pieces instead of moving<br>
+                • Swapping counts as your full turn<br>
+                • You cannot swap with opponent's pieces<br>
+                • Click "Swap Mode" then select two of your pieces to swap
+            </div>
+        </div>
+    </div>
 
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBdYqLe6JMmn2FlXeHS22d8KTjcNMWZsL8",
-            authDomain: "kangaroo-chess.firebaseapp.com",
-            databaseURL: "https://kangaroo-chess-default-rtdb.firebaseio.com",
-            projectId: "kangaroo-chess",
-            storageBucket: "kangaroo-chess.firebasestorage.app",
-            messagingSenderId: "636926594125",
-            appId: "1:636926594125:web:4cd79a6cf1271ce77c6004",
-            measurementId: "G-XM6WFE9Q66"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-
-        // Make Firebase available globally
-        window.firebase = {
-            database,
-            ref,
-            set,
-            onValue,
-            push,
-            remove,
-            onDisconnect,
-            get,
-            update
-        };
-
-        // Connection status
-        const connectedRef = ref(database, '.info/connected');
-        onValue(connectedRef, (snapshot) => {
-            const status = document.getElementById('connectionStatus');
-            if (snapshot.val() === true) {
-                status.textContent = '● Online';
-                status.className = 'connection-status online';
-            } else {
-                status.textContent = '● Offline';
-                status.className = 'connection-status offline';
-            }
-        });
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script>
         // Game state
-        let selectedSquare = null;
-        let gameBoard = [
-            ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-            ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-            ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-        ];
-        let currentPlayer = 'white';
-        let gameOver = false;
-        let playerColor = null;
-        let roomName = '';
-        let playerId = '';
-        let draggedElement = null;
-        let draggedFrom = null;
-        let gameListener = null;
-
-        const pieceSymbols = {
-            'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
-            'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+        let gameState = {
+            board: [],
+            currentPlayer: 'white',
+            selectedSquare: null,
+            validMoves: [],
+            gameOver: false,
+            winner: null,
+            swapMode: false,
+            swapSelected: [],
+            roomCode: null,
+            playerColor: null,
+            players: {}
         };
 
-        // Generate unique player ID
-        playerId = 'player_' + Math.random().toString(36).substr(2, 9);
+        // Socket connection
+        let socket;
+        const serverUrl = window.location.hostname === 'localhost' ? 
+            'http://localhost:3000' : 
+            `${window.location.protocol}//${window.location.host}`;
 
-        // Room management
-        window.joinRoom = async function() {
-            const input = document.getElementById('roomNameInput');
-            const room = input.value.trim();
+        // Initialize socket connection
+        function initSocket() {
+            socket = io(serverUrl);
             
-            if (!room) {
-                alert('Please enter a room name');
-                return;
-            }
-            
-            roomName = room;
-            showStatus('Connecting to room...', 'waiting');
-            
-            try {
-                const roomRef = firebase.ref(firebase.database, `rooms/${room}`);
-                
-                // Get room data once
-                const snapshot = await firebase.get(roomRef);
-                const roomData = snapshot.val();
-                
-                if (!roomData) {
-                    // Create new room - first player is always white
-                    await createRoom(room);
-                } else {
-                    // Room exists - check how many players
-                    const existingPlayers = roomData.players ? Object.keys(roomData.players) : [];
-                    
-                    if (existingPlayers.includes(playerId)) {
-                        // Player is rejoining
-                        playerColor = roomData.players[playerId].color;
-                        showStatus(`Rejoining room "${room}" as ${playerColor}...`, 'connected');
-                        setTimeout(() => {
-                            startGame();
-                            listenForGameUpdates(room);
-                        }, 1000);
-                    } else if (existingPlayers.length >= 2) {
-                        // Room is full
-                        showStatus('Room is full! Try another room.', 'waiting');
-                        return;
-                    } else {
-                        // Join as second player (black)
-                        await joinExistingRoom(room);
-                    }
-                }
-                
-            } catch (error) {
-                console.error('Error joining room:', error);
-                showStatus('Error connecting to room. Please try again.', 'waiting');
-            }
-        };
+            socket.on('connect', () => {
+                document.getElementById('connectionStatus').textContent = 'Connected';
+                document.getElementById('connectionStatus').className = 'connection-status connected';
+            });
 
-        async function createRoom(room) {
-            playerColor = 'white';
-            const roomData = {
-                players: {
-                    [playerId]: {
-                        color: 'white',
-                        joined: Date.now()
-                    }
-                },
-                gameState: {
-                    board: gameBoard,
-                    currentPlayer: 'white',
-                    gameOver: false
-                },
-                created: Date.now()
-            };
-            
-            await firebase.set(firebase.ref(firebase.database, `rooms/${room}`), roomData);
-            showStatus(`Room "${room}" created! Share this room name with your friend. Waiting for opponent...`, 'waiting');
-            
-            // Set up disconnect cleanup
-            const playerRef = firebase.ref(firebase.database, `rooms/${room}/players/${playerId}`);
-            firebase.onDisconnect(playerRef).remove();
-            
-            // Listen for game updates and start when ready
-            listenForGameUpdates(room);
-        }
+            socket.on('disconnect', () => {
+                document.getElementById('connectionStatus').textContent = 'Disconnected';
+                document.getElementById('connectionStatus').className = 'connection-status disconnected';
+            });
 
-        async function joinExistingRoom(room) {
-            try {
-                // Get current room state to determine available color
-                const roomRef = firebase.ref(firebase.database, `rooms/${room}`);
-                const snapshot = await firebase.get(roomRef);
-                const roomData = snapshot.val();
-                
-                if (!roomData || !roomData.players) {
-                    throw new Error('Room data not found');
-                }
-                
-                // Check what colors are taken
-                const existingPlayers = Object.values(roomData.players);
-                const takenColors = existingPlayers.map(player => player.color);
-                
-                // Assign the opposite color of what's already taken
-                if (takenColors.includes('white') && !takenColors.includes('black')) {
-                    playerColor = 'black';
-                } else if (takenColors.includes('black') && !takenColors.includes('white')) {
-                    playerColor = 'white';
-                } else {
-                    // Default to black if white is taken, or if somehow both are taken
-                    playerColor = 'black';
-                }
-                
-                // Add this player to the room
-                const playerRef = firebase.ref(firebase.database, `rooms/${room}/players/${playerId}`);
-                await firebase.set(playerRef, {
-                    color: playerColor,
-                    joined: Date.now()
-                });
-                
-                showStatus(`Joined room "${room}"! You are ${playerColor.charAt(0).toUpperCase() + playerColor.slice(1)}. Starting game...`, 'connected');
-                
-                // Set up disconnect cleanup
-                firebase.onDisconnect(playerRef).remove();
-                
-                // Start listening for game updates
-                listenForGameUpdates(room);
-                
-                // Don't start the game immediately - let the listener handle it
-                
-            } catch (error) {
-                console.error('Error joining room:', error);
-                showStatus('Failed to join room. Please try again.', 'waiting');
-                throw error;
-            }
-        }
+            socket.on('roomJoined', (data) => {
+                gameState.roomCode = data.roomCode;
+                gameState.playerColor = data.playerColor;
+                gameState.players = data.players;
+                document.getElementById('roomSetup').style.display = 'none';
+                document.getElementById('gameArea').style.display = 'flex';
+                updateGameStatus();
+            });
 
-        function listenForGameUpdates(room) {
-            const roomRef = firebase.ref(firebase.database, `rooms/${room}`);
-            
-            gameListener = firebase.onValue(roomRef, (snapshot) => {
-                const roomData = snapshot.val();
-                
-                if (!roomData) return;
-                
-                console.log('Room data update:', roomData);
-                
-                // Make sure we have the right player color assigned
-                if (roomData.players && roomData.players[playerId]) {
-                    const assignedColor = roomData.players[playerId].color;
-                    if (playerColor !== assignedColor) {
-                        playerColor = assignedColor;
-                        console.log(`Player color updated to: ${playerColor}`);
-                        // Update player role display if game screen is visible
-                        const playerRoleElement = document.getElementById('playerRole');
-                        if (playerRoleElement) {
-                            playerRoleElement.textContent = playerColor.charAt(0).toUpperCase() + playerColor.slice(1);
-                        }
-                        // Recreate board with correct orientation if game is active
-                        if (document.getElementById('gameScreen').style.display !== 'none') {
-                            createBoard();
-                            renderBoard();
-                        }
-                    }
-                }
-                
-                // Check if we have two players and should start the game
-                const playerCount = roomData.players ? Object.keys(roomData.players).length : 0;
-                console.log(`Room has ${playerCount} players`);
-                
-                if (playerCount === 2) {
-                    // If we haven't started the game yet, start it
-                    const gameScreen = document.getElementById('gameScreen');
-                    const lobbyScreen = document.getElementById('lobbyScreen');
-                    
-                    if (gameScreen.style.display === 'none' || gameScreen.style.display === '') {
-                        console.log('Starting game for both players');
-                        showStatus('Opponent joined! Starting game...', 'connected');
-                        setTimeout(() => {
-                            console.log('Actually starting game now');
-                            startGame();
-                        }, 500);
-                    }
-                } else if (playerCount === 1) {
-                    // Still waiting for second player
-                    showStatus(`Room "${room}" created! Share this room name with your friend. Waiting for opponent...`, 'waiting');
-                }
-                
-                // Update game state if it exists
-                if (roomData.gameState) {
-                    const newBoard = roomData.gameState.board;
-                    const newCurrentPlayer = roomData.gameState.currentPlayer;
-                    const newGameOver = roomData.gameState.gameOver;
-                    
-                    if (JSON.stringify(newBoard) !== JSON.stringify(gameBoard) ||
-                        newCurrentPlayer !== currentPlayer ||
-                        newGameOver !== gameOver) {
-                        
-                        gameBoard = newBoard;
-                        currentPlayer = newCurrentPlayer;
-                        gameOver = newGameOver;
-                        
-                        // Only render if game screen is visible
-                        if (document.getElementById('gameScreen').style.display !== 'none') {
-                            renderBoard();
-                        }
-                    }
-                }
+            socket.on('gameState', (data) => {
+                gameState.board = data.board;
+                gameState.currentPlayer = data.currentPlayer;
+                gameState.gameOver = data.gameOver;
+                gameState.winner = data.winner;
+                gameState.players = data.players;
+                renderBoard();
+                updateGameStatus();
+            });
+
+            socket.on('moveMade', (data) => {
+                addMoveToHistory(data.move, data.player);
+            });
+
+            socket.on('error', (message) => {
+                alert(message);
             });
         }
 
-        function showStatus(message, type) {
-            const status = document.getElementById('statusMessage');
-            status.textContent = message;
-            status.className = `status ${type}`;
-            status.style.display = 'block';
-        }
-
-        function startGame() {
-            console.log('startGame called, playerColor:', playerColor);
-            
-            document.getElementById('lobbyScreen').style.display = 'none';
-            document.getElementById('gameScreen').style.display = 'block';
-            document.getElementById('currentRoom').textContent = roomName;
-            document.getElementById('playerRole').textContent = playerColor ? playerColor.charAt(0).toUpperCase() + playerColor.slice(1) : 'Unknown';
-            
-            // Reset game board to initial state
-            gameBoard = [
+        // Initialize chess board
+        function initializeBoard() {
+            const initialBoard = [
                 ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
                 ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
                 [null, null, null, null, null, null, null, null],
@@ -532,369 +360,524 @@
                 ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
                 ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
             ];
-            currentPlayer = 'white';
-            gameOver = false;
-            
-            updatePlayerDisplay();
-            createBoard();
-            renderBoard();
-            
-            console.log('Game started successfully');
+            return initialBoard;
         }
 
-        window.leaveRoom = function() {
-            // Clean up Firebase listeners
-            if (gameListener) {
-                gameListener();
-                gameListener = null;
-            }
-            
-            // Remove player from room
-            if (roomName && playerId) {
-                firebase.remove(firebase.ref(firebase.database, `rooms/${roomName}/players/${playerId}`));
-            }
-            
-            // Reset game state
-            resetGame();
-            
-            // Return to lobby
-            document.getElementById('gameScreen').style.display = 'none';
-            document.getElementById('lobbyScreen').style.display = 'block';
-            document.getElementById('statusMessage').style.display = 'none';
-            document.getElementById('roomNameInput').value = '';
-        };
-
-        function resetGame() {
-            gameBoard = [
-                ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-                ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-                [null, null, null, null, null, null, null, null],
-                [null, null, null, null, null, null, null, null],
-                [null, null, null, null, null, null, null, null],
-                [null, null, null, null, null, null, null, null],
-                ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-                ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-            ];
-            currentPlayer = 'white';
-            gameOver = false;
-            selectedSquare = null;
-            playerColor = null;
-            roomName = '';
+        // Convert piece notation to emoji
+        function pieceToEmoji(piece) {
+            const pieces = {
+                'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+                'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+            };
+            return pieces[piece] || '';
         }
 
-        function updatePlayerDisplay() {
-            const whiteCard = document.getElementById('whitePlayer');
-            const blackCard = document.getElementById('blackPlayer');
-            
-            whiteCard.classList.toggle('active', currentPlayer === 'white');
-            blackCard.classList.toggle('active', currentPlayer === 'black');
-            
-            const playerDisplay = document.getElementById('currentPlayer');
-            if (gameOver) {
-                playerDisplay.textContent = 'Game Over!';
-            } else {
-                const turnIndicator = currentPlayer === playerColor ? ' (Your turn)' : ' (Opponent\'s turn)';
-                playerDisplay.textContent = `Current Player: ${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}${turnIndicator}`;
-            }
+        // Check if piece belongs to player
+        function isPlayerPiece(piece, player) {
+            if (!piece) return false;
+            return player === 'white' ? piece === piece.toUpperCase() : piece === piece.toLowerCase();
         }
 
-        // Board creation and rendering
-        function createBoard() {
+        // Render the chess board
+        function renderBoard() {
             const board = document.getElementById('chessboard');
             board.innerHTML = '';
             
-            // Create board from player's perspective
-            for (let displayRow = 0; displayRow < 8; displayRow++) {
-                for (let displayCol = 0; displayCol < 8; displayCol++) {
-                    // Calculate actual board position based on player color
-                    let actualRow = displayRow;
-                    let actualCol = displayCol;
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    square.className = 'square';
+                    square.className += (row + col) % 2 === 0 ? ' light' : ' dark';
+                    square.dataset.row = row;
+                    square.dataset.col = col;
                     
-                    if (playerColor === 'black') {
-                        // Flip board for black player
-                        actualRow = 7 - displayRow;
-                        actualCol = 7 - displayCol;
+                    // Add coordinates
+                    if (col === 0) {
+                        const rankLabel = document.createElement('div');
+                        rankLabel.className = 'coordinates coord-rank';
+                        rankLabel.textContent = 8 - row;
+                        square.appendChild(rankLabel);
+                    }
+                    if (row === 7) {
+                        const fileLabel = document.createElement('div');
+                        fileLabel.className = 'coordinates coord-file';
+                        fileLabel.textContent = String.fromCharCode(97 + col);
+                        square.appendChild(fileLabel);
                     }
                     
-                    const square = document.createElement('div');
-                    square.className = `square ${(displayRow + displayCol) % 2 === 0 ? 'light' : 'dark'}`;
-                    square.dataset.row = actualRow;
-                    square.dataset.col = actualCol;
+                    if (gameState.board[row] && gameState.board[row][col]) {
+                        square.textContent = pieceToEmoji(gameState.board[row][col]);
+                    }
                     
-                    // Click events
-                    square.addEventListener('click', () => handleSquareClick(actualRow, actualCol));
+                    // Add visual indicators
+                    if (gameState.selectedSquare && 
+                        gameState.selectedSquare.row === row && 
+                        gameState.selectedSquare.col === col) {
+                        square.classList.add('selected');
+                    }
                     
-                    // Drag and drop events
-                    square.addEventListener('dragstart', (e) => handleDragStart(e, actualRow, actualCol));
-                    square.addEventListener('dragover', (e) => e.preventDefault());
-                    square.addEventListener('drop', (e) => handleDrop(e, actualRow, actualCol));
+                    if (gameState.swapSelected.some(s => s.row === row && s.col === col)) {
+                        square.classList.add('swap-selected');
+                    }
                     
+                    if (gameState.validMoves.some(m => m.row === row && m.col === col)) {
+                        square.classList.add('valid-move');
+                    }
+                    
+                    square.addEventListener('click', () => handleSquareClick(row, col));
                     board.appendChild(square);
                 }
             }
         }
 
-        function renderBoard() {
-            for (let row = 0; row < 8; row++) {
-                for (let col = 0; col < 8; col++) {
-                    const square = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-                    if (!square) continue;
-                    
-                    const piece = gameBoard[row][col];
-                    
-                    if (piece) {
-                        const symbol = pieceSymbols[piece];
-                        square.textContent = symbol || piece; // Fallback to piece letter if symbol missing
-                        square.draggable = isPlayerPiece(piece, currentPlayer) && !gameOver && currentPlayer === playerColor;
-                    } else {
-                        square.textContent = '';
-                        square.draggable = false;
-                    }
-                    
-                    // Remove selection highlight
-                    square.classList.remove('selected');
-                }
-            }
-            
-            // Add selection highlight
-            if (selectedSquare) {
-                const selectedElement = document.querySelector(`[data-row="${selectedSquare.row}"][data-col="${selectedSquare.col}"]`);
-                if (selectedElement) {
-                    selectedElement.classList.add('selected');
-                }
-            }
-            
-            updatePlayerDisplay();
-        }
-
-        // Click handling
+        // Handle square clicks
         function handleSquareClick(row, col) {
-            if (gameOver) return;
+            if (gameState.gameOver || gameState.currentPlayer !== gameState.playerColor) return;
             
-            const piece = gameBoard[row][col];
-            
-            // Only allow moves for the player whose turn it is
-            if (playerColor && currentPlayer !== playerColor) {
-                alert(`It's ${currentPlayer}'s turn, but you are ${playerColor}`);
-                return;
-            }
-
-            if (selectedSquare) {
-                // Try to make a move
-                const moveIsValid = canMoveTo(selectedSquare.row, selectedSquare.col, row, col);
-                if (moveIsValid) {
-                    alert(`Making valid move from ${selectedSquare.row},${selectedSquare.col} to ${row},${col}`);
-                    makeMove(selectedSquare.row, selectedSquare.col, row, col);
-                } else {
-                    alert(`Invalid move from ${selectedSquare.row},${selectedSquare.col} to ${row},${col}`);
-                }
-                // Always clear selection after attempting a move
-                selectedSquare = null;
+            if (gameState.swapMode) {
+                handleSwapClick(row, col);
             } else {
-                // Select a piece
-                if (piece && isPlayerPiece(piece, currentPlayer)) {
-                    selectedSquare = { row, col };
-                    alert(`Selected ${piece} at ${row},${col} for player ${currentPlayer}`);
-                } else if (piece) {
-                    alert(`Cannot select ${piece} - belongs to ${isPlayerPiece(piece, 'white') ? 'white' : 'black'}, current player is ${currentPlayer}`);
-                }
+                handleNormalClick(row, col);
             }
-            renderBoard();
         }
 
-        // Drag and drop handling
-        function handleDragStart(e, row, col) {
-            if (gameOver) return;
+        // Handle swap mode clicks
+        function handleSwapClick(row, col) {
+            const piece = gameState.board[row][col];
             
-            // Only allow moves for the player whose turn it is
-            if (playerColor && currentPlayer !== playerColor) {
-                e.preventDefault();
-                return;
+            if (!isPlayerPiece(piece, gameState.playerColor)) {
+                return; // Can only select own pieces for swapping
             }
-
-            const piece = gameBoard[row][col];
-            if (piece && isPlayerPiece(piece, currentPlayer)) {
-                draggedElement = e.target;
-                draggedFrom = { row, col };
-                e.target.classList.add('dragging');
-                selectedSquare = { row, col };
-                renderBoard();
+            
+            const existingIndex = gameState.swapSelected.findIndex(s => s.row === row && s.col === col);
+            
+            if (existingIndex >= 0) {
+                // Deselect if already selected
+                gameState.swapSelected.splice(existingIndex, 1);
+            } else if (gameState.swapSelected.length < 2) {
+                // Select if we have room
+                gameState.swapSelected.push({row, col});
             } else {
-                e.preventDefault();
-            }
-        }
-
-        function handleDrop(e, row, col) {
-            e.preventDefault();
-            
-            if (draggedFrom && canMoveTo(draggedFrom.row, draggedFrom.col, row, col)) {
-                makeMove(draggedFrom.row, draggedFrom.col, row, col);
+                // Replace first selection with new one
+                gameState.swapSelected = [{row, col}];
             }
             
-            // Clean up drag state
-            if (draggedElement) {
-                draggedElement.classList.remove('dragging');
-            }
-            draggedElement = null;
-            draggedFrom = null;
-            selectedSquare = null;
-            renderBoard();
-        }
-
-        // Game logic
-        function isPlayerPiece(piece, player) {
-            if (!piece || !player) return false;
-            
-            if (player === 'white') {
-                return piece === piece.toUpperCase(); // White pieces are uppercase
-            } else {
-                return piece === piece.toLowerCase(); // Black pieces are lowercase
-            }
-        }
-
-        function canMoveTo(fromRow, fromCol, toRow, toCol) {
-            const piece = gameBoard[fromRow][fromCol];
-            const targetPiece = gameBoard[toRow][toCol];
-
-            if (fromRow === toRow && fromCol === toCol) return false;
-
-            // Special rule: Allow swapping with own pieces
-            if (targetPiece && isPlayerPiece(piece, currentPlayer) && isPlayerPiece(targetPiece, currentPlayer)) {
-                return true;
-            }
-
-            // Regular move: Don't allow moving to square occupied by own piece
-            if (targetPiece && isPlayerPiece(targetPiece, currentPlayer)) {
-                return false;
-            }
-
-            // Check if it's a valid move according to piece rules
-            return isValidMove(piece, fromRow, fromCol, toRow, toCol);
-        }
-
-        function makeMove(fromRow, fromCol, toRow, toCol) {
-            const piece = gameBoard[fromRow][fromCol];
-            const targetPiece = gameBoard[toRow][toCol];
-
-            // Check if capturing enemy king (win condition)
-            if (targetPiece && (targetPiece.toLowerCase() === 'k') && !isPlayerPiece(targetPiece, currentPlayer)) {
-                gameOver = true;
-                const winnerColor = currentPlayer;
-                setTimeout(() => {
-                    alert(`${winnerColor.charAt(0).toUpperCase() + winnerColor.slice(1)} wins by capturing the king!`);
-                }, 100);
-            }
-
-            // Handle piece swapping (special rule) or regular move
-            if (targetPiece && isPlayerPiece(piece, currentPlayer) && isPlayerPiece(targetPiece, currentPlayer)) {
-                // Swap positions of two own pieces
-                gameBoard[fromRow][fromCol] = targetPiece;
-                gameBoard[toRow][toCol] = piece;
-            } else {
-                // Regular move or capture
-                gameBoard[toRow][toCol] = piece;
-                gameBoard[fromRow][fromCol] = null;
-            }
-
-            // Only switch turns if the game isn't over
-            if (!gameOver) {
-                currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
-            }
-
-            // Update Firebase with new game state - but only if we're in an active game
-            if (roomName && document.getElementById('gameScreen').style.display !== 'none') {
-                const gameStateRef = firebase.ref(firebase.database, `rooms/${roomName}/gameState`);
-                firebase.set(gameStateRef, {
-                    board: gameBoard,
-                    currentPlayer: currentPlayer,
-                    gameOver: gameOver
+            // Execute swap if we have 2 pieces selected
+            if (gameState.swapSelected.length === 2) {
+                const swap1 = gameState.swapSelected[0];
+                const swap2 = gameState.swapSelected[1];
+                
+                socket.emit('makeSwap', {
+                    roomCode: gameState.roomCode,
+                    from: swap1,
+                    to: swap2
                 });
+                
+                gameState.swapSelected = [];
+                gameState.swapMode = false;
+                document.getElementById('swapBtn').textContent = 'Swap Mode';
             }
+            
+            renderBoard();
         }
 
-        function isValidMove(piece, fromRow, fromCol, toRow, toCol) {
-            const deltaRow = toRow - fromRow;
-            const deltaCol = toCol - fromCol;
-            const absDeltaRow = Math.abs(deltaRow);
-            const absDeltaCol = Math.abs(deltaCol);
+        // Handle normal move clicks
+        function handleNormalClick(row, col) {
+            const piece = gameState.board[row][col];
+            
+            if (gameState.selectedSquare) {
+                // Try to make a move
+                const validMove = gameState.validMoves.find(m => m.row === row && m.col === col);
+                if (validMove) {
+                    socket.emit('makeMove', {
+                        roomCode: gameState.roomCode,
+                        from: gameState.selectedSquare,
+                        to: {row, col}
+                    });
+                }
+                
+                gameState.selectedSquare = null;
+                gameState.validMoves = [];
+            } else if (isPlayerPiece(piece, gameState.playerColor)) {
+                // Select piece
+                gameState.selectedSquare = {row, col};
+                gameState.validMoves = getValidMoves(row, col);
+            }
+            
+            renderBoard();
+        }
 
-            switch (piece.toLowerCase()) {
-                case 'p':
-                    const direction = piece === 'P' ? -1 : 1;
-                    const startRow = piece === 'P' ? 6 : 1;
+        // Get valid moves for a piece (simplified - you may want to expand this)
+        function getValidMoves(row, col) {
+            const piece = gameState.board[row][col];
+            if (!piece) return [];
+            
+            const moves = [];
+            const pieceType = piece.toLowerCase();
+            const isWhite = piece === piece.toUpperCase();
+            
+            // This is a simplified move generation - you'd want to implement full chess rules
+            // For now, we'll just allow moves to empty squares or captures
+            
+            if (pieceType === 'p') {
+                // Pawn moves
+                const direction = isWhite ? -1 : 1;
+                const startRow = isWhite ? 6 : 1;
+                
+                // Forward moves
+                if (gameState.board[row + direction] && gameState.board[row + direction][col] === null) {
+                    moves.push({row: row + direction, col});
                     
-                    // Forward movement (no capture)
-                    if (deltaCol === 0) {
-                        // One square forward
-                        if (deltaRow === direction && !gameBoard[toRow][toCol]) {
-                            return true;
+                    // Two squares from start
+                    if (row === startRow && gameState.board[row + 2 * direction][col] === null) {
+                        moves.push({row: row + 2 * direction, col});
+                    }
+                }
+                
+                // Diagonal captures
+                for (let dc of [-1, 1]) {
+                    if (col + dc >= 0 && col + dc < 8 && row + direction >= 0 && row + direction < 8) {
+                        const target = gameState.board[row + direction][col + dc];
+                        if (target && isPlayerPiece(target, gameState.playerColor === 'white' ? 'black' : 'white')) {
+                            moves.push({row: row + direction, col: col + dc});
                         }
-                        // Two squares forward from starting position
-                        if (fromRow === startRow && deltaRow === 2 * direction && !gameBoard[toRow][toCol]) {
-                            return true;
+                    }
+                }
+            } else {
+                // For other pieces, allow moves to any square for now (simplified)
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        if (r === row && c === col) continue;
+                        const target = gameState.board[r][c];
+                        if (!target || !isPlayerPiece(target, gameState.playerColor)) {
+                            moves.push({row: r, col: c});
                         }
                     }
-                    // Diagonal capture
-                    else if (absDeltaCol === 1 && deltaRow === direction && gameBoard[toRow][toCol]) {
-                        return true;
-                    }
-                    return false;
+                }
+            }
+            
+            return moves;
+        }
 
-                case 'r':
-                    // Rook moves horizontally or vertically
-                    if (deltaRow === 0 || deltaCol === 0) {
-                        return isPathClear(fromRow, fromCol, toRow, toCol);
-                    }
-                    return false;
+        // Toggle swap mode
+        function toggleSwapMode() {
+            if (gameState.currentPlayer !== gameState.playerColor || gameState.gameOver) return;
+            
+            gameState.swapMode = !gameState.swapMode;
+            gameState.swapSelected = [];
+            gameState.selectedSquare = null;
+            gameState.validMoves = [];
+            
+            document.getElementById('swapBtn').textContent = 
+                gameState.swapMode ? 'Exit Swap' : 'Swap Mode';
+            
+            renderBoard();
+        }
 
-                case 'b':
-                    // Bishop moves diagonally
-                    if (absDeltaRow === absDeltaCol) {
-                        return isPathClear(fromRow, fromCol, toRow, toCol);
-                    }
-                    return false;
+        // Room management
+        function createRoom() {
+            const playerName = document.getElementById('playerName').value.trim() || 'Anonymous';
+            socket.emit('createRoom', {playerName});
+        }
 
-                case 'q':
-                    // Queen moves like rook or bishop
-                    if (deltaRow === 0 || deltaCol === 0 || absDeltaRow === absDeltaCol) {
-                        return isPathClear(fromRow, fromCol, toRow, toCol);
-                    }
-                    return false;
+        function joinRoom() {
+            const roomCode = document.getElementById('roomInput').value.trim().toUpperCase();
+            const playerName = document.getElementById('playerName').value.trim() || 'Anonymous';
+            
+            if (!roomCode) {
+                alert('Please enter a room code');
+                return;
+            }
+            
+            socket.emit('joinRoom', {roomCode, playerName});
+        }
 
-                case 'k':
-                    // King moves one square in any direction
-                    return absDeltaRow <= 1 && absDeltaCol <= 1;
+        function leaveRoom() {
+            socket.emit('leaveRoom', {roomCode: gameState.roomCode});
+            gameState = {
+                board: [],
+                currentPlayer: 'white',
+                selectedSquare: null,
+                validMoves: [],
+                gameOver: false,
+                winner: null,
+                swapMode: false,
+                swapSelected: [],
+                roomCode: null,
+                playerColor: null,
+                players: {}
+            };
+            document.getElementById('roomSetup').style.display = 'block';
+            document.getElementById('gameArea').style.display = 'none';
+        }
 
-                case 'n':
-                    // Knight moves in L-shape
-                    return (absDeltaRow === 2 && absDeltaCol === 1) || (absDeltaRow === 1 && absDeltaCol === 2);
+        function newGame() {
+            socket.emit('newGame', {roomCode: gameState.roomCode});
+        }
 
-                default:
-                    return false;
+        // Update game status
+        function updateGameStatus() {
+            const status = document.getElementById('gameStatus');
+            const swapBtn = document.getElementById('swapBtn');
+            
+            if (!gameState.players || Object.keys(gameState.players).length < 2) {
+                status.textContent = `Room: ${gameState.roomCode} - Waiting for opponent...`;
+                swapBtn.disabled = true;
+            } else if (gameState.gameOver) {
+                status.textContent = gameState.winner ? 
+                    `Game Over - ${gameState.winner} wins!` : 
+                    'Game Over - Draw!';
+                swapBtn.disabled = true;
+            } else {
+                const currentPlayerName = Object.values(gameState.players)
+                    .find(p => p.color === gameState.currentPlayer)?.name || gameState.currentPlayer;
+                
+                status.textContent = gameState.currentPlayer === gameState.playerColor ?
+                    'Your turn' :
+                    `${currentPlayerName}'s turn`;
+                
+                swapBtn.disabled = gameState.currentPlayer !== gameState.playerColor;
             }
         }
 
-        function isPathClear(fromRow, fromCol, toRow, toCol) {
-            const rowDir = toRow > fromRow ? 1 : toRow < fromRow ? -1 : 0;
-            const colDir = toCol > fromCol ? 1 : toCol < fromCol ? -1 : 0;
-            
-            let currentRow = fromRow + rowDir;
-            let currentCol = fromCol + colDir;
-            
-            while (currentRow !== toRow || currentCol !== toCol) {
-                if (gameBoard[currentRow][currentCol] !== null) return false;
-                currentRow += rowDir;
-                currentCol += colDir;
-            }
-            
-            return true;
+        // Add move to history
+        function addMoveToHistory(move, player) {
+            const history = document.getElementById('moveHistory');
+            const moveDiv = document.createElement('div');
+            moveDiv.className = 'move';
+            moveDiv.textContent = `${player}: ${move}`;
+            history.appendChild(moveDiv);
+            history.scrollTop = history.scrollHeight;
         }
 
-        // Allow Enter key to join room
-        document.getElementById('roomNameInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                joinRoom();
+        // Initialize the game
+        function init() {
+            initSocket();
+        }
+
+        // Start the game when page loads
+        window.addEventListener('load', init);
+    </script>
+
+    <!-- Server-side code (Node.js with Socket.IO) -->
+    <script type="text/template" id="server-code">
+        // This is the server code that should be saved as a separate file (server.js)
+        // when deploying to Render.com
+        
+        const express = require('express');
+        const http = require('http');
+        const socketIo = require('socket.io');
+        const path = require('path');
+
+        const app = express();
+        const server = http.createServer(app);
+        const io = socketIo(server, {
+            cors: {
+                origin: "*",
+                methods: ["GET", "POST"]
             }
+        });
+
+        // Serve static files
+        app.use(express.static(path.join(__dirname, 'public')));
+
+        // Game rooms storage
+        const rooms = new Map();
+
+        // Generate random room code
+        function generateRoomCode() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        // Initialize chess board
+        function initializeBoard() {
+            return [
+                ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+                ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                [null, null, null, null, null, null, null, null],
+                [null, null, null, null, null, null, null, null],
+                [null, null, null, null, null, null, null, null],
+                [null, null, null, null, null, null, null, null],
+                ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+            ];
+        }
+
+        io.on('connection', (socket) => {
+            console.log('User connected:', socket.id);
+
+            socket.on('createRoom', (data) => {
+                const roomCode = generateRoomCode();
+                const room = {
+                    code: roomCode,
+                    board: initializeBoard(),
+                    currentPlayer: 'white',
+                    players: {
+                        [socket.id]: {
+                            name: data.playerName,
+                            color: 'white'
+                        }
+                    },
+                    gameOver: false,
+                    winner: null
+                };
+
+                rooms.set(roomCode, room);
+                socket.join(roomCode);
+
+                socket.emit('roomJoined', {
+                    roomCode,
+                    playerColor: 'white',
+                    players: room.players
+                });
+
+                socket.emit('gameState', room);
+            });
+
+            socket.on('joinRoom', (data) => {
+                const room = rooms.get(data.roomCode);
+                if (!room) {
+                    socket.emit('error', 'Room not found');
+                    return;
+                }
+
+                if (Object.keys(room.players).length >= 2) {
+                    socket.emit('error', 'Room is full');
+                    return;
+                }
+
+                const playerColor = Object.keys(room.players).length === 0 ? 'white' : 'black';
+                room.players[socket.id] = {
+                    name: data.playerName,
+                    color: playerColor
+                };
+
+                socket.join(data.roomCode);
+
+                socket.emit('roomJoined', {
+                    roomCode: data.roomCode,
+                    playerColor,
+                    players: room.players
+                });
+
+                io.to(data.roomCode).emit('gameState', room);
+            });
+
+            socket.on('makeMove', (data) => {
+                const room = rooms.get(data.roomCode);
+                if (!room || room.gameOver) return;
+
+                const player = room.players[socket.id];
+                if (!player || player.color !== room.currentPlayer) return;
+
+                const {from, to} = data;
+                
+                // Basic move validation (you might want to add more comprehensive validation)
+                if (room.board[from.row][from.col] && 
+                    from.row >= 0 && from.row < 8 && from.col >= 0 && from.col < 8 &&
+                    to.row >= 0 && to.row < 8 && to.col >= 0 && to.col < 8) {
+                    
+                    // Make the move
+                    room.board[to.row][to.col] = room.board[from.row][from.col];
+                    room.board[from.row][from.col] = null;
+
+                    // Switch turns
+                    room.currentPlayer = room.currentPlayer === 'white' ? 'black' : 'white';
+
+                    const moveNotation = `${String.fromCharCode(97 + from.col)}${8 - from.row}-${String.fromCharCode(97 + to.col)}${8 - to.row}`;
+                    
+                    io.to(data.roomCode).emit('gameState', room);
+                    io.to(data.roomCode).emit('moveMade', {
+                        move: moveNotation,
+                        player: player.name
+                    });
+                }
+            });
+
+            socket.on('makeSwap', (data) => {
+                const room = rooms.get(data.roomCode);
+                if (!room || room.gameOver) return;
+
+                const player = room.players[socket.id];
+                if (!player || player.color !== room.currentPlayer) return;
+
+                const {from, to} = data;
+                
+                // Validate swap
+                if (room.board[from.row][from.col] && room.board[to.row][to.col]) {
+                    const piece1 = room.board[from.row][from.col];
+                    const piece2 = room.board[to.row][to.col];
+                    
+                    // Check if both pieces belong to the current player
+                    const isWhite = player.color === 'white';
+                    const piece1IsPlayer = isWhite ? piece1 === piece1.toUpperCase() : piece1 === piece1.toLowerCase();
+                    const piece2IsPlayer = isWhite ? piece2 === piece2.toUpperCase() : piece2 === piece2.toLowerCase();
+                    
+                    if (piece1IsPlayer && piece2IsPlayer) {
+                        // Perform swap
+                        room.board[from.row][from.col] = piece2;
+                        room.board[to.row][to.col] = piece1;
+
+                        // Switch turns
+                        room.currentPlayer = room.currentPlayer === 'white' ? 'black' : 'white';
+
+                        const swapNotation = `SWAP ${String.fromCharCode(97 + from.col)}${8 - from.row}↔${String.fromCharCode(97 + to.col)}${8 - to.row}`;
+                        
+                        io.to(data.roomCode).emit('gameState', room);
+                        io.to(data.roomCode).emit('moveMade', {
+                            move: swapNotation,
+                            player: player.name
+                        });
+                    }
+                }
+            });
+
+            socket.on('newGame', (data) => {
+                const room = rooms.get(data.roomCode);
+                if (!room) return;
+
+                room.board = initializeBoard();
+                room.currentPlayer = 'white';
+                room.gameOver = false;
+                room.winner = null;
+
+                io.to(data.roomCode).emit('gameState', room);
+            });
+
+            socket.on('leaveRoom', (data) => {
+                socket.leave(data.roomCode);
+                const room = rooms.get(data.roomCode);
+                if (room) {
+                    delete room.players[socket.id];
+                    if (Object.keys(room.players).length === 0) {
+                        rooms.delete(data.roomCode);
+                    } else {
+                        io.to(data.roomCode).emit('gameState', room);
+                    }
+                }
+            });
+
+            socket.on('disconnect', () => {
+                console.log('User disconnected:', socket.id);
+                
+                // Remove player from all rooms
+                for (const [roomCode, room] of rooms.entries()) {
+                    if (room.players[socket.id]) {
+                        delete room.players[socket.id];
+                        if (Object.keys(room.players).length === 0) {
+                            rooms.delete(roomCode);
+                        } else {
+                            io.to(roomCode).emit('gameState', room);
+                        }
+                        break;
+                    }
+                }
+            });
+        });
+
+        const PORT = process.env.PORT || 3000;
+        server.listen(PORT, () => {
+            console.log(`Kangaroo Chess server running on port ${PORT}`);
         });
     </script>
 </body>
