@@ -1,20 +1,13 @@
 {
-  "name": "multiplayer-chess-with-swap",
+  "name": "kangaroo-chess",
   "version": "1.0.0",
-  "description": "Multiplayer chess game with piece swap variant",
+  "description": "Multiplayer chess with piece swapping",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "socket.io": "^4.7.4"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
-  },
-  "keywords": ["chess", "multiplayer", "websocket", "game"],
-  "author": "Your Name",
-  "license": "MIT"
+    "socket.io": "^4.7.2"
+  }
 }
